@@ -6,6 +6,8 @@ import argparse
 import asyncio
 import os
 import sys
+import uuid
+from datetime import datetime
 
 from .config import PROJECT_ROOT, Settings
 from .export import usable, write_candidates, write_csv, write_json, write_report
@@ -31,7 +33,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Busca correos de contacto público de canales de YouTube y Twitch "
             "para proponer colaboraciones."
         ),
+        add_help=True,
     )
+    p.add_argument("--version", action="version", version="sc-found-t 1.0.0")
     p.add_argument(
         "targets",
         nargs="?",
@@ -137,6 +141,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     os.makedirs(args.outdir, exist_ok=True)
+    
+    # Generate unique name with timestamp and optional UUID for collision avoidance
+    import uuid
+    name_base = args.name or f"contactos_{datetime.now():%Y%m%d_%H%M%S}"
+    # Add short uuid if no name provided to avoid collisions on re-runs
+    if not args.name:
+        name_base = f"{namebase}_{uuid.uuid4().hex[:6]}"
+    
     targets = read_targets(args.targets) if args.targets else []
     search_summary: dict = {}
 
@@ -155,7 +167,7 @@ def main(argv: list[str] | None = None) -> int:
 
     final = usable(hits) if args.only_business else hits
 
-    stem = args.name or datetime_stamp()
+    stem = name_base
     csv_path = os.path.join(args.outdir, f"{stem}.csv")
     json_path = os.path.join(args.outdir, f"{stem}.json")
     md_path = os.path.join(args.outdir, f"{stem}.md")

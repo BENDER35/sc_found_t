@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import re
 from dataclasses import asdict
+from typing import Optional
 
 from . import twitch, youtube
 from .config import Settings
@@ -12,6 +13,10 @@ from .crawler import SiteCrawler
 from .extract import classify_role, extract_emails
 from .fetcher import Fetcher
 from .models import Creator, Hit
+
+# Constantes para puntuación de emails
+SCORE_BIO = 30  # Puntuación base para emails encontrados en la bio
+SCORE_DESC = 0  # Puntuación para emails extraídos de la descripción
 
 
 def detect_platform(target: str) -> str:
@@ -46,7 +51,7 @@ def hits_from_description(creator: Creator) -> list[Hit]:
                 role=role,
                 kind="enlace_contacto",
                 source_url=source,
-                score=score + 30,
+                score=score + SCORE_BIO,
             )
         )
 
@@ -105,12 +110,12 @@ async def process_one(
 
     if too_small(creator, settings):
         print(f"    . bajo el mínimo de {settings.min_subscribers} subs: no se rastrea")
-        return dedupe(found, settings.min_score)
+        return []
 
     if settings.crawl and creator.external_links:
         found += await crawler.crawl(creator)
 
-    return dedupe(found, settings.min_score)
+    return found
 
 
 def too_small(creator: Creator, settings: Settings) -> bool:
@@ -125,14 +130,19 @@ def too_small(creator: Creator, settings: Settings) -> bool:
 
 
 async def run(targets: list[str], settings: Settings) -> tuple[list[Hit], SiteCrawler, Fetcher]:
+    import asyncio
+    
     f = Fetcher(settings)
     crawler = SiteCrawler(f, settings)
-    sem = asyncio.Semaphore(settings.concurrency)
+    sem = asyncio.Semaphore(max(1, settings.concurrency))
 
     async def guarded(target: str) -> list[Hit]:
         async with sem:
             try:
                 return await process_one(target, settings, f, crawler)
+            except asyncio.CancelledError:
+                print(f"  ! {target}: cancelled")
+                return []
             except Exception as exc:
                 print(f"  ! {target}: {type(exc).__name__}: {exc}")
                 return []
