@@ -1,0 +1,13 @@
+# Canales de ejemplo. Un canal por linea.
+# YouTube: @handle, URL completa, o nombre del canal.
+# Twitch: @handle, twitch.tv/handle o la URL completa.
+
+# --- YouTube ---
+@mkbhd
+@auronplay
+@DotCSV
+https://www.youtube.com/@Quackity
+
+# --- Twitch ---
+twitch.tv/ibai
+@auronplay
