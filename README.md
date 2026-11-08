@@ -1,159 +1,121 @@
 # sc-found-t
 
-Busca **correos de contacto públicos** de canales de YouTube y Twitch para proponer
-colaboraciones. Solo lee lo que el creador ya publica: la bio del canal, el enlace
-de "Contacto" que YouTube muestra en la pestaña *About*, y las páginas públicas de
-contacto de los sitios web que el creador enlaza.
+Searches for **public contact emails** from YouTube and Twitch channels to propose collaborations. It only reads what the creator already publishes: the channel bio, the "Contact" link YouTube shows in the *About* tab, and the public contact pages of the websites the creator links to.
 
-Sin APIs de pago, sin adivinar casillas, sin listas compradas.
+No paid APIs, no guessing mailboxes, no purchased lists.
 
-## Instalación
+## Installation
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-## Uso
+## Usage
 
 ```bash
-# Un canal suelto
+# A single channel
 .venv/bin/python run.py @mkbhd
 
-# Varios separados por comas o espacios
+# Multiple channels separated by commas or spaces
 .venv/bin/python run.py "@mkbhd @DotCSV twitch.tv/ibai"
 
-# Un fichero con un canal por línea
+# A file with one channel per line
 .venv/bin/python run.py input/example.txt -o out
 
-# Solo la bio, sin visitar webs externas
+# Only the bio, without visiting external websites
 .venv/bin/python run.py @mkbhd --no-crawl
 
-# Solo casillas de contacto/negocios, no cuentas personales
+# Only contact/business emails, not personal accounts
 .venv/bin/python run.py input/ejemplo.txt --only-business
 ```
 
 ```bash
-# Buscar por palabra clave y sacar emails de lo que aparezca
-.venv/bin/python run.py --search "cocina española"
+# Search by keyword and extract emails from what appears
+.venv/bin/python run.py --search "spanish cooking"
 
-# Solo una plataforma, ordenando por audiencia y quedándote con los grandes
+# Only one platform, sorting by audience and keeping the big ones
 .venv/bin/python run.py --search "minecraft español" \
-    --search-platform youtube --search-sort vistas --min-subs 50000
+    --search-platform youtube --search-sort views --min-subs 50000
 
-# Buscando canales, no videos (deduplica por canal)
-.venv/bin/python run.py --search "recetas" --search-type canal
+# Searching for channels, not videos (deduplicates by channel)
+.venv/bin/python run.py --search "recipes" --search-type channel
 ```
 
-También se puede combinar con targets sueltos: lo que salga de `--search` se
-analiza junto a los canales que indiques.
+You can also combine with standalone targets: what comes out of `--search` is analyzed together with the channels you indicate.
 
-Salida en `out/`: `contactos_<fecha>.csv`, `.json` y un `.md` con el informe.
-Cuando usas `--search` además sale un `busqueda_canales.csv` con los canales
-encontrados, para poder revisar la lista antes de escribir.
+Output in `out/`: `contactos_<date>.csv`, `.json` and a `.md` with the report. When using `--search`, a `busqueda_canales.csv` with the found channels is also saved, so you can review the list before proceeding.
 
-## Búsqueda por palabra clave
+## Keyword Search
 
-**YouTube** no necesita nada: `yt-dlp` consulta la página pública de resultados
-y devuelve el canal de cada video, que se deduplica antes de gastar nada más.
-`--search-sort` cambia el orden (relevancia, vistas, fecha) y `--search-type
-canal` filtra por tipo de canal en vez de video.
+**YouTube** requires nothing: `yt-dlp` queries the public results page and returns the channel for each video, which is deduplicated before spending more resources. `--search-sort` changes the order (relevance, views, date) and `--search-type channel` filters by channel type instead of video.
 
-**Twitch** sí necesita credenciales, porque no hay búsqueda pública sin token.
-Regístrala en <https://dev.twitch.tv/console/apps> y exporta:
+**Twitch** does need credentials, because there's no public search without a token. Register at <https://dev.twitch.tv/console/apps> and export:
 
 ```bash
 export TWITCH_CLIENT_ID=...
 export TWITCH_CLIENT_SECRET=...
 ```
 
-Es una app de servidor a servidor, no la cuenta de ningún creador. El token
-sale por `client_credentials` y no da acceso a datos privados. Sin esas
-variables, `--search` sigue funcionando en YouTube y avisa de que Twitch se
-queda fuera.
+It's a server-to-server app, not the account of any creator. The token comes from `client_credentials` and doesn't access private data. Without those variables, `--search` still works on YouTube and warns that Twitch is left out.
 
-## Opciones
+## Options
 
-| Flag | Qué hace |
+| Flag | What it does |
 |---|---|
-| `-s, --search` | Palabra clave: descubre canales antes de buscar emails |
-| `--search-platform` | `youtube`, `twitch` o `todos` |
-| `--search-sort` | `relevancia`, `vistas` o `fecha` |
-| `--search-type` | `video` (dedup por canal) o `canal` |
-| `--search-limit` | Máximo de canales por plataforma (40) |
-| `--live-only` | En Twitch, solo los que estén en directo |
-| `--min-subs N` | No rastrea canales por debajo de N suscriptores |
-| `-o, --outdir` | Carpeta de salida (por defecto `out/`) |
-| `-c, --concurrency` | Canales en paralelo (4) |
-| `--delay` | Segundos entre peticiones al mismo dominio (1.5) |
-| `--max-pages` | Páginas por dominio (6) |
-| `--max-domains` | Dominios por creador (5) |
-| `--max-domains-total` | Tope global de dominios en toda la ejecución (60) |
-| `--no-crawl` | Solo busca en la bio, no visita webs |
-| `--only-business` | Deja solo `contacto`, `colaboraciones`, `prensa`, `gestión` |
-| `--min-score N` | Filtra por puntuación mínima |
-| `--any-domain` | Acepta correos de terceros hallados en plataformas (más ruido) |
-| `--ignore-robots` | Ignora `robots.txt` en sitios externos |
-| `--cache-ttl` | Horas de caché en `.cache/` (168) |
-| `--contact-email` | Tu email; va en el User-Agent para que te puedan identificar |
-| `--cookies-from-browser` | `firefox`, `chrome`, `brave`… si YouTube te pide verificación |
+| `-s, --search` | Keyword: discovers channels before searching emails |
+| `--search-platform` | `youtube`, `twitch` or `todos` |
+| `--search-sort` | `relevance`, `views` or `date` |
+| `--search-type` | `video` (dedup by channel) or `channel` |
+| `--search-limit` | Maximum channels per platform (40) |
+| `--live-only` | On Twitch, only those currently live |
+| `--min-subs N` | Does not track channels below N subscribers |
+| `-o, --outdir` | Output folder (default `out/`) |
+| `-c, --concurrency` | Channels in parallel (4) |
+| `--delay` | Seconds between requests to same domain (1.5) |
+| `--max-pages` | Pages per domain (6) |
+| `--max-domains` | Domains per creator (5) |
+| `--max-domains-total` | Global limit of domains in whole execution (60) |
+| `--no-crawl` | Only searches in the bio, does not visit websites |
+| `--only-business` | Leaves only `contact`, `collaborations`, `press`, `management` |
+| `--min-score N` | Filters by minimum score |
+| `--any-domain` | Accepts emails from third parties found on platforms (more noise) |
+| `--ignore-robots` | Ignores `robots.txt` on external sites |
+| `--cache-ttl` | Cache hours in `.cache/` (168) |
+| `--contact-email` | Your email; goes in the User-Agent so you can be identified |
+| `--cookies-from-browser` | `firefox`, `chrome`, `brave`... if YouTube asks for verification |
 
-## Dónde busca, y en qué orden
+## Where it searches, and in what order
 
-1. **Descripción del canal** (YouTube y Twitch). Si el canal lo has buscado por
-   palabra clave, esto es lo primero que se mira de cada resultado.
-2. **Pestaña `/about` de YouTube**, que es donde está el enlace de contacto real
-   del creador (lo que YouTube llama *business inquiries*) y el resto de su
-   sección de enlaces.
-3. **Sitios externos** que el creador enlaza: primero los que suelen tener
-   contacto declarado (Patreon, Ko-fi, Linktree, About.me, Buy Me a Coffee…) y
-   luego su web propia, probando `/contacto`, `/press`, `/colaboraciones`,
-   `/partnerships`, `/sponsors`, `/booking`, `/management`…
-4. Correos escritos a mano para evitar bots: `nombre (at) gmail (dot) com`.
+1. **Channel description** (YouTube and Twitch). If you searched by keyword, this is the first thing looked at for each result.
+2. **YouTube `/about` tab**, which is where the creator's real contact link is located (what YouTube calls *business inquiries*) and the rest of its links section.
+3. **External sites** the creator links to: first those that usually have declared contact (Patreon, Ko-fi, Linktree, About.me, Buy Me a Coffee...) and then their own website, testing `/contacto`, `/press`, `/colaboraciones`, `/partnerships`, `/sponsors`, `/booking`, `/management`...
+4. Manually written emails to avoid bots: `nombre (at) gmail (dot) com`.
 
-## Cómo filtra
+## How it filters
 
-- Descarta `noreply@`, `example.com`, `tuemail@`, `nombre@ejemplo.com`.
-- Descarta los correos cuyo dominio no es el de la web visitada, salvo que sean
-  de un proveedor consumer (gmail, hotmail…) o un `mailto:` declarado. Así
-  desaparece el ruido de los portales de soporte de Patreon o Zendesk.
-- Puntuúa cada contacto: `mailto:` declarado +25, `colaboraciones/`partnerships`
-  70, `contacto`/`hola` 60, `prensa` 55, `gestión` 50, genérico 20.
-- Deduplica por email conservando el de mayor puntuación.
+- Discards `noreply@`, `example.com`, `tuemail@`, `nombre@ejemplo.com`.
+- Discards emails whose domain is not from the visited site, unless they are from a consumer provider (gmail, hotmail...) or a declared `mailto:`. This removes the noise from Patreon or Zendesk support portals.
+- Scores each contact: `mailto:` declared +25, `colaboraciones/`partnerships` 70, `contacto`/`hola` 60, `prensa` 55, `gestión` 50, generic 20.
+- Deduplicates by email keeping the one with highest score.
 
-## Etiqueta
+## Label
 
-El script va con `--contact-email` en el User-Agent
-(`sc-found-t/1.0 (+collaboration-outreach bot; contact: TU-EMAIL-ACA)`).
-Es lo honesto: el administrador del sitio puede ver quién eres y pedirte que
-pares. No lo quites si no vas a identificarte.
+The script comes with `--contact-email` in the User-Agent
+(`sc-found-t/1.0 (+collaboration-outreach bot; contact: YOUR-EMAIL-ACA)`).
+It's the honest thing: the site administrator can see who you are and ask you to stop. Don't remove it if you won't identify yourself.
 
-## Límites que conviene conocer
+## Worth Knowing Limits
 
-- **Twitch no da los enlaces del canal.** Su `/about` se pinta en JavaScript y
-  el endpoint público solo devuelve la bio. Si el streamer no pone un correo en
-  la bio, no habrá resultado; conviene pasarle su canal de YouTube o su web.
-- **La búsqueda de Twitch solo ve el nombre, no la temática.** Su API oficial
-  compara con el login o el nombre del canal, así que busca bien a quien se
-  llama por su canal (`cocinacarmen`), no a quien hace recetas con otro nombre.
-  Para eso, busca en YouTube y cruza con la web del creador.
-- **`--min-subs` no filtra la lista de salida**, solo decide a quién se rastrea:
-  los suscriptores solo se saben al resolver cada canal. En Twitch no hay dato
-  de seguidores, así que el filtro no descarta nada allí.
-- **YouTube** puede pedir verificación de edad o de bots. Si pasa, usa
-  `--cookies-from-browser firefox`.
-- **No valida que el buzón exista.** Todos vienen de páginas públicas, pero
-  revisa el dominio antes de escribir: `hola@midominio.com` en una web que no es
-  del creador suele ser la casilla de soporte de un proveedor de pagos.
-- Los correos personales (`nombre.apellido@gmail.com`) se marcan como
-  `sin_clasificar`. Usa `--only-business` para quedarte con las casillas
-  profesionales.
+- **Twitch does not provide channel links.** Its `/about` is rendered in JavaScript and the public endpoint only returns the bio. If the streamer doesn't put an email in the bio, there will be no result; it's advisable to pass their YouTube channel or their website.
+- **Twitch search only sees the name, not the topic.** Its official API compares with the login or the channel name, so search well who goes by their channel name (`cocinacarmen`), not who makes recipes with another name. For that, search on YouTube and cross-reference with the creator's website.
+- **`--min-subs` does not filter the output list**, it only decides who to track: subscribers are only known when resolving each channel. In Twitch there's no follower data, so the filter doesn't discard anything there.
+- **YouTube** may ask for age or bot verification. If that happens, use `--cookies-from-browser firefox`.
+- **Does not validate that the mailbox exists.** All come from public pages, but check the domain before writing: `hola@midominio.com` on a website that isn't the creator's usually is the support ticket of a payment provider.
+- **Personal emails (`nombre.apellido@gmail.com`) are marked as `sin_clasificar`.** Use `--only-business` to keep professional mailboxes.
 
-## Legal y ethics
+## Legal and ethics
 
-- Solo se visited páginas públicas, respetando `robots.txt` (salvo que lo
-  desactives explícitamente) y con un retardo por dominio.
-- Datos de contacto **de negocio publicados para ser contactados**. Nada de
-  registros filtrados, bases de datos compradas ni casillas adivinadas.
-- Incluye siempre un enlace de baja en tu primer correo y no hagas envíos
-  masivos sin consentimiento.
+- Only visits public pages, respecting `robots.txt` (unless you explicitly disable it) and with a delay per domain.
+- Contact data **published for business contact**. Nothing from filtered records, purchased databases or guessed mailboxes.
+- Always include an unsubscribe link in your first email and do not make massive sends without consent.
